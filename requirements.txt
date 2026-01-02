@@ -1,6 +1,6 @@
 streamlit
 pandas
 numpy
-matplotlib==3.4.1
+matplotlib
 plotly
 altair
