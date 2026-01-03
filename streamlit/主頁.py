@@ -9,6 +9,7 @@ st.set_page_config(
 st.title("📊 VTuber 直播數據分析")
 
 st.markdown("""
-這個網站整合多個直播分析頁面，  
-請從左側選單選擇要查看的分析內容。
+1.開台時間分布（Global Time Profile）
+2.各時段觀眾變化（Individual Time Diff Heatmap）
+3.同時直播競爭分析（By Time）
 """)
