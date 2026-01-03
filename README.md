@@ -1,5 +1,9 @@
 # 子午觀眾數據分析
 
+這裡是配合交大VTuber社FF46社刊〈〉中的〈〉使用的資料
+
+這裡包含了原始資料跟圖表網頁
+
 ## 原始資料
 
 database資料夾中有原始資料的檔案，檔案用的sql是sqlite
@@ -11,7 +15,7 @@ database資料夾中有原始資料的檔案，檔案用的sql是sqlite
 
 圖表是用 Altair 和 Matplotlib 套件做的 
 
-網址如下：https://ray0411-ff46-data.streamlit.app/
+網址如下：https://ff46data-vt.streamlit.app/
 
 ## 其他
 
