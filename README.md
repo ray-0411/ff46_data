@@ -15,7 +15,7 @@ database資料夾中有原始資料的檔案，檔案用的sql是sqlite
 
 圖表是用 Altair 和 Matplotlib 套件做的 
 
-網址如下：https://ff46data-vt.streamlit.app/
+網址如下：https://ff46-data.streamlit.app/
 
 ## 其他
 
