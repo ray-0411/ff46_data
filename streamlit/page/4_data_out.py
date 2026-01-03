@@ -5,17 +5,20 @@ from st_aggrid import AgGrid, GridOptionsBuilder
 from datetime import datetime
 from pathlib import Path
 
-from data_fun import (
+# 資料庫路徑
+BASE_DIR = Path(__file__).resolve().parents[2]   # 指到 main
+db_path = BASE_DIR / "database" / "calculate_data.db"
+
+from page.data_fun import (
     plot_time_distribution,
     plot_time_count_distribution,
     plot_time_count_all_channels
 )
 
+
 #streamlit run main_data.py
 
-# 資料庫路徑
-BASE_DIR = Path(__file__).resolve().parents[2]   # 指到 main
-db_path = BASE_DIR / "database" / "calculate_data.db"
+
 
 # 讀取資料
 with sqlite3.connect(db_path) as conn:
