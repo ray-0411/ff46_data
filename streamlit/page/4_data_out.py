@@ -5,6 +5,8 @@ from st_aggrid import AgGrid, GridOptionsBuilder
 from datetime import datetime
 from pathlib import Path
 
+#streamlit run streamlit/app.py
+
 # 資料庫路徑
 BASE_DIR = Path(__file__).resolve().parents[2]   # 指到 main
 db_path = BASE_DIR / "database" / "calculate_data.db"
@@ -48,33 +50,18 @@ df['tw_number'] = df['tw_number'].apply(map_stream_id)
 view_mode = st.selectbox("選擇檢視模式", ["總觀看統計","單一頻道", "全部頻道影片"])
 
 # view_mode預設(debug用)
-#view_mode = "單一頻道"  
+# view_mode = "全部頻道影片"  
+
+
 
 # ---------- 單一頻道模式 ----------
 if view_mode == "單一頻道":
     # 建立 name -> channel_id 的映射
     name_to_id = dict(zip(df_streamer['channel_name'], df_streamer['channel_id']))
 
+    
+    filtered_channels = df_streamer['channel_name'].tolist()
 
-
-    # 你手動定義 group 的顯示順序（想要的順序）
-    group_order = ['全部', '子午', '春魚', '其他']
-
-    available_groups = df_streamer['group'].dropna().unique().tolist()
-    sorted_groups = [g for g in group_order if g in available_groups or g == '全部']
-
-    # 加入其他沒列出的群組（不含全部）
-    others = [g for g in available_groups if g not in group_order]
-    sorted_groups.extend(others)
-
-    selected_group = st.selectbox("請選擇群組", sorted_groups)
-
-    # 根據選擇的群組篩選頻道名稱
-    if selected_group == '全部':
-        filtered_channels = df_streamer['channel_name'].tolist()
-    else:
-        filtered_channels = df_streamer[df_streamer['group'] == selected_group]['channel_name'].tolist()
-        
     selected_name = st.selectbox("請選擇頻道", filtered_channels)
 
 
@@ -182,9 +169,15 @@ if view_mode == "單一頻道":
         sortable=True,
     )
     for col, width in zip(["直播ID", "平均觀看數", "最大觀看數", "最小觀看數", "資料筆數", "日期", "開始時間", "結束時間", "直播名稱"],
-                        [1200, 1500, 1500, 1500, 1000, 2000, 1500, 1500, 1000]):
+                        [80, 110, 110, 110, 90, 110, 90, 90, 2000]):
         if col in df_yt_display.columns:
-            gb.configure_column(col, width=width, filter=False)
+            gb.configure_column(
+                col, 
+                width=width, 
+                filter=False,
+                minWidth=width,   # ⭐ 鎖死最小
+                maxWidth=width,   # ⭐ 鎖死最大
+            )
     
     
     AgGrid(
@@ -197,13 +190,17 @@ if view_mode == "單一頻道":
         width='100%',
         custom_css={
             ".ag-header-cell-label": {
-                "justify-content": "flex-start",  # 表頭靠左
+                "justify-content": "flex-start",   # 容器靠左
+            },
+            ".ag-header-cell-text": {
+                "text-align": "left",              # ⭐ 標題文字本體靠左
+                "width": "100%",                   # ⭐ 很重要，否則不會動
             },
             ".ag-cell": {
-                "text-align": "left",  # 儲存格靠左
+                "text-align": "left",              # 資料列靠左
             },
         },
-        key="youtube_table"
+        key=f"youtube_table_{view_mode}"
     )
 
     #開啟才能用修改same_stream
@@ -258,9 +255,15 @@ if view_mode == "單一頻道":
     gb2 = GridOptionsBuilder.from_dataframe(df_tw_display)
     gb2.configure_default_column(editable=False, groupable=False, filter=False, resizable=True, sortable=True)
     for col, width in zip(["直播ID", "平均觀看數", "最大觀看數", "最小觀看數", "資料筆數", "日期", "開始時間", "結束時間", "直播名稱"],
-                        [1200, 1500, 1500, 1500, 1000, 2000, 1500, 1500, 1000]):
+                        [80, 110, 110, 110, 90, 110, 90, 90, 2000]):
         if col in df_tw_display.columns:
-            gb2.configure_column(col, width=width, filter=False)
+            gb2.configure_column(
+                col, 
+                width=width, 
+                filter=False,
+                minWidth=width,   # ⭐ 鎖死最小
+                maxWidth=width,   # ⭐ 鎖死最大
+            )
 
     AgGrid(
         df_tw_display,
@@ -272,13 +275,17 @@ if view_mode == "單一頻道":
         width='100%',
         custom_css={
             ".ag-header-cell-label": {
-                "justify-content": "flex-start",  # 表頭靠左
+                "justify-content": "flex-start",   # 容器靠左
+            },
+            ".ag-header-cell-text": {
+                "text-align": "left",              # ⭐ 標題文字本體靠左
+                "width": "100%",                   # ⭐ 很重要，否則不會動
             },
             ".ag-cell": {
-                "text-align": "left",  # 儲存格靠左
+                "text-align": "left",              # 資料列靠左
             },
         },
-        key="twitch_table"
+        key=f"twitch_table_{view_mode}"
     )
     
     # 畫出時間分布圖
@@ -362,17 +369,42 @@ elif view_mode == "總觀看統計":
     # 設定欄寬
     for col, width in zip(
         ["編號", "頻道", "YouTube 平均觀看數", "Twitch 平均觀看數", "紀錄筆數", "YouTube 直播場數", "Twitch 直播場數"],
-        [80, 200, 150, 150, 100, 150, 150]
+        [80, 100, 180, 180, 100, 170, 160]
     ):
-        gb.configure_column(col, width=width)
+        gb.configure_column(
+            col, 
+            width=width,
+            minWidth=width,   # ⭐ 鎖死最小
+            maxWidth=width,   # ⭐ 鎖死最大
+        )
+    
+    CUSTOM_CSS_LEFT = {
+        ".ag-header-cell-label": {
+            "justify-content": "flex-start",   # 容器靠左
+        },
+        ".ag-header-cell-text": {
+            "text-align": "left",              # ⭐ 標題文字本體靠左
+            "width": "100%",                   # ⭐ 很重要，否則不會動
+        },
+        ".ag-cell": {
+            "text-align": "left",              # 資料列靠左
+        },
+    }
+
 
     # 顯示 AgGrid 表格
-    AgGrid(grouped, gridOptions=gb.build(), theme='balham', height=400, width='100%', key='avg_all_channel')
+    AgGrid(grouped, gridOptions=gb.build(), 
+        theme='balham', 
+        height=560, 
+        width='100%', 
+        fit_columns_on_grid_load=False,
+        custom_css=CUSTOM_CSS_LEFT,
+        key=f'avg_all_channel_{view_mode}'
+    )
 
 
 # ---------- 全部頻道影片模式 ----------
 elif view_mode == "全部頻道影片":
-    st.subheader("🎥 所有頻道影片一覽")
 
     # 濾除無意義資料（直播編號 = 0）
     df_youtube = df[df['yt_number'] != 0].copy()
@@ -391,7 +423,9 @@ elif view_mode == "全部頻道影片":
     df_yt_summary.columns = ['直播ID', '平均觀看數', '最大觀看數', '最小觀看數', '資料筆數', '開始時間', '結束時間', 'channel_id']
     df_yt_summary = pd.merge(df_yt_summary, df_stream[['id', 'name']], how='left', left_on='直播ID', right_on='id')
     df_yt_summary = pd.merge(df_yt_summary, df_streamer[['channel_id', 'channel_name']], how='left', on='channel_id')
-
+    
+    
+    
     # Twitch 統計
     df_tw_summary = df_twitch.groupby('tw_number').agg(
         tw_avg=('twitch', lambda x: x[x >= 10].mean()),
@@ -412,8 +446,12 @@ elif view_mode == "全部頻道影片":
         df_summary['開始時間_str'] = df_summary['開始時間'].dt.strftime("%H:%M").fillna("")
         df_summary['結束時間_str'] = df_summary['結束時間'].dt.strftime("%H:%M").fillna("")
         df_summary.drop(columns=['開始時間', '結束時間'], inplace=True)
+    
+    st.subheader("🎥 所有頻道影片一覽")
 
-    # 欄位順序與名稱
+    # ===============================
+    # 第一段：共用的欄位選擇（只做一次）
+    # ===============================
     col_name_map = {
         '直播ID': '直播ID',
         '頻道名稱': 'channel_name',
@@ -427,78 +465,129 @@ elif view_mode == "全部頻道影片":
         '直播名稱': 'name',
     }
     fixed_order = list(col_name_map.keys())
-    selected_display_names = st.multiselect("📋 選擇要顯示的欄位", fixed_order, default=fixed_order)
-    final_display_names = [col for col in fixed_order if col in selected_display_names]
-    final_df_columns = [col_name_map[col] for col in final_display_names]
 
-    # YouTube 表格
+    selected_display_names = st.multiselect(
+        "📋 選擇要顯示的欄位",
+        fixed_order,
+        default=fixed_order,
+        key="all_video_cols_once",   # ⭐ 只在這裡用一次
+    )
+
+    final_df_columns = [col_name_map[c] for c in fixed_order if c in selected_display_names]
+
+    # ===============================
+    # 第二段：YouTube（完全仿單一頻道）
+    # ===============================
     st.markdown("### 📺 YouTube 直播統計（全部頻道）")
-    df_yt_display = df_yt_summary[final_df_columns].rename(columns={
-        'channel_name': '頻道名稱',
-        'name': '直播名稱',
-        '開始時間_str': '開始時間',
-        '結束時間_str': '結束時間',
-    })
-    
-    if '直播ID' in df_yt_display.columns:
-        df_yt_display['直播ID'] = pd.to_numeric(df_yt_display['直播ID'], errors='coerce').fillna(0).astype(int)
+
+    df_yt_display = (
+        df_yt_summary[final_df_columns]
+        .rename(columns={
+            'channel_name': '頻道名稱',
+            'name': '直播名稱',
+            '開始時間_str': '開始時間',
+            '結束時間_str': '結束時間',
+        })
+        .copy()
+    )
+
+    # 型別整理（跟單一頻道一樣）
+    for col in ['直播ID', '平均觀看數', '最大觀看數', '最小觀看數', '資料筆數']:
+        if col in df_yt_display.columns:
+            df_yt_display[col] = pd.to_numeric(df_yt_display[col], errors='coerce')
+
+    # 👉 單一頻道邏輯：這裡才 build grid
+    gb_yt = GridOptionsBuilder.from_dataframe(df_yt_display)
+    gb_yt.configure_default_column(editable=False, sortable=True, filter=False, resizable=True)
+
     if '平均觀看數' in df_yt_display.columns:
         df_yt_display['平均觀看數'] = df_yt_display['平均觀看數'].round(1)
-    if '最大觀看數' in df_yt_display.columns:
-        df_yt_display['最大觀看數'] = pd.to_numeric(df_yt_display['最大觀看數'], errors='coerce')
-    if '最小觀看數' in df_yt_display.columns:
-        df_yt_display['最小觀看數'] = pd.to_numeric(df_yt_display['最小觀看數'], errors='coerce')
-    if '資料筆數' in df_yt_display.columns:
-        df_yt_display['資料筆數'] = pd.to_numeric(df_yt_display['資料筆數'], errors='coerce')
-        
-    # 在丟進 AgGrid 前強制轉成 float64
-    force_numeric_cols = ["直播ID", "平均觀看數", "最大觀看數", "最小觀看數", "資料筆數"]
-    for col in force_numeric_cols:
-        if col in df_yt_display.columns:
-            df_yt_display[col] = pd.to_numeric(df_yt_display[col], errors="coerce").astype("float64")
 
-
-    gb = GridOptionsBuilder.from_dataframe(df_yt_display)
-    gb.configure_default_column(editable=False, groupable=False, filter=False, resizable=True, sortable=True)
     for col, width in zip(
         ["直播ID", "平均觀看數", "最大觀看數", "最小觀看數", "資料筆數", "日期", "開始時間", "結束時間", "直播名稱", "頻道名稱"],
-        [120, 150, 150, 150, 100, 200, 150, 150, 100, 200]
+        [80, 110, 110, 110, 90, 110, 100, 100, 2000, 100]
     ):
         if col in df_yt_display.columns:
-            gb.configure_column(col, width=width, filter=False)
-    AgGrid(df_yt_display, gridOptions=gb.build(), theme='balham', height=400, width='100%', key='yt_all_video')
+            gb_yt.configure_column(col, width=width, minWidth=width, maxWidth=width,filter=False)
 
-    # Twitch 表格
+    AgGrid(
+        df_yt_display,
+        gridOptions=gb_yt.build(),
+        theme="balham",
+        height=400,
+        width="100%",
+        fit_columns_on_grid_load=False,
+        enable_enterprise_modules=False,
+        key="yt_all_video_clean",   # ⭐ 固定、不吃 rerun
+        custom_css={
+            ".ag-header-cell-label": {
+                "justify-content": "flex-start",   # 容器靠左
+            },
+            ".ag-header-cell-text": {
+                "text-align": "left",              # ⭐ 標題文字本體靠左
+                "width": "100%",                   # ⭐ 很重要，否則不會動
+            },
+            ".ag-cell": {
+                "text-align": "left",              # 資料列靠左
+            },
+        },
+    )
+
+    # ===============================
+    # 第三段：Twitch（邏輯完全對稱）
+    # ===============================
     st.markdown("### 🎮 Twitch 直播統計（全部頻道）")
-    df_tw_display = df_tw_summary[final_df_columns].rename(columns={
-        'channel_name': '頻道名稱',
-        'name': '直播名稱',
-        '開始時間_str': '開始時間',
-        '結束時間_str': '結束時間',
-    })
 
-    if '直播ID' in df_tw_display.columns:
-        df_tw_display['直播ID'] = pd.to_numeric(df_tw_display['直播ID'], errors='coerce').fillna(0).astype(int)
+    df_tw_display = (
+        df_tw_summary[final_df_columns]
+        .rename(columns={
+            'channel_name': '頻道名稱',
+            'name': '直播名稱',
+            '開始時間_str': '開始時間',
+            '結束時間_str': '結束時間',
+        })
+        .copy()
+    )
+
+    for col in ['直播ID', '平均觀看數', '最大觀看數', '最小觀看數', '資料筆數']:
+        if col in df_tw_display.columns:
+            df_tw_display[col] = pd.to_numeric(df_tw_display[col], errors='coerce')
+
+    gb_tw = GridOptionsBuilder.from_dataframe(df_tw_display)
+    gb_tw.configure_default_column(editable=False, sortable=True, filter=False, resizable=True)
+
     if '平均觀看數' in df_tw_display.columns:
         df_tw_display['平均觀看數'] = df_tw_display['平均觀看數'].round(1)
-    if '最大觀看數' in df_tw_display.columns:
-        df_tw_display['最大觀看數'] = pd.to_numeric(df_tw_display['最大觀看數'], errors='coerce').fillna(0).astype(int)
-    if '最小觀看數' in df_tw_display.columns:
-        df_tw_display['最小觀看數'] = pd.to_numeric(df_tw_display['最小觀看數'], errors='coerce').fillna(0).astype(int)
 
-    force_numeric_cols = ["直播ID", "平均觀看數", "最大觀看數", "最小觀看數", "資料筆數"]
-    for col in force_numeric_cols:
-        if col in df_tw_display.columns:
-            df_tw_display[col] = pd.to_numeric(df_tw_display[col], errors="coerce").astype("float64")
-    
-    gb2 = GridOptionsBuilder.from_dataframe(df_tw_display)
-    gb2.configure_default_column(editable=False, groupable=False, filter=False, resizable=True, sortable=True)
     for col, width in zip(
         ["直播ID", "平均觀看數", "最大觀看數", "最小觀看數", "資料筆數", "日期", "開始時間", "結束時間", "直播名稱", "頻道名稱"],
-        [120, 150, 150, 150, 100, 200, 150, 150, 100, 200]
+        [80, 110, 110, 110, 90, 110, 100, 100, 2000, 100]
     ):
         if col in df_tw_display.columns:
-            gb2.configure_column(col, width=width, filter=False)
-    AgGrid(df_tw_display, gridOptions=gb2.build(), theme='balham', height=400, width=900, key='tw_all_video')
-    
+            gb_tw.configure_column(col, width=width, minWidth=width, maxWidth=width,filter=False)
+
+    AgGrid(
+        df_tw_display,
+        gridOptions=gb_tw.build(),
+        theme="balham",
+        height=400,
+        width="100%",
+        fit_columns_on_grid_load=False,
+        enable_enterprise_modules=False,
+        key="tw_all_video_clean",
+        custom_css={
+            ".ag-header-cell-label": {
+                "justify-content": "flex-start",   # 容器靠左
+            },
+            ".ag-header-cell-text": {
+                "text-align": "left",              # ⭐ 標題文字本體靠左
+                "width": "100%",                   # ⭐ 很重要，否則不會動
+            },
+            ".ag-cell": {
+                "text-align": "left",              # 資料列靠左
+            },
+        },
+    )
+
     plot_time_count_all_channels(df)
+    
