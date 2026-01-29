@@ -315,6 +315,10 @@ elif view_mode == "總觀看統計":
     grouped = df_filtered.groupby('channel').agg(
         yt_avg=('youtube', lambda x: x[x >= 10].mean()),
         tw_avg=('twitch', lambda x: x[x >= 10].mean()),
+        
+        yt_viewer_quarter_sum=('youtube', lambda x: x[x >= 10].sum()),
+        tw_viewer_quarter_sum=('twitch', lambda x: x[x >= 10].sum()),
+        
         count=('datetime', 'count')
     ).reset_index()
     
@@ -336,13 +340,30 @@ elif view_mode == "總觀看統計":
     grouped['YouTube 直播場數'] = grouped['YouTube 直播場數'].fillna(0).astype(int)
     grouped['Twitch 直播場數'] = grouped['Twitch 直播場數'].fillna(0).astype(int)
 
+    grouped['YouTube 觀眾小時'] = grouped['yt_viewer_quarter_sum'] / 4
+    grouped['Twitch 觀眾小時'] = grouped['tw_viewer_quarter_sum'] / 4 
 
-    # 選擇與顯示欄位
-    grouped = grouped[['channel_name', 'yt_avg', 'tw_avg', 'count', 'YouTube 直播場數', 'Twitch 直播場數']]
-    grouped.columns = ['頻道', 'YouTube 平均觀看數', 'Twitch 平均觀看數', '紀錄筆數', 'YouTube 直播場數', 'Twitch 直播場數']
+
+    # 選取並重新命名欄位
+    grouped = grouped[[
+        'channel_name', 
+        'yt_avg', 'tw_avg', 
+        'count', 
+        'YouTube 直播場數', 'Twitch 直播場數',
+        'YouTube 觀眾小時', 'Twitch 觀眾小時',
+    ]]
+    grouped.columns = [
+                    '頻道', 
+                    'YouTube 平均觀看數', 'Twitch 平均觀看數', 
+                    '紀錄筆數', 
+                    'YouTube 直播場數', 'Twitch 直播場數',
+                    'YouTube 觀眾小時', 'Twitch 觀眾小時',]
 
     # 補0欄位
-    numeric_cols = ['YouTube 平均觀看數', 'Twitch 平均觀看數', '紀錄筆數', 'YouTube 直播場數', 'Twitch 直播場數']
+    numeric_cols = [
+        'YouTube 平均觀看數', 'Twitch 平均觀看數', 
+        '紀錄筆數', 'YouTube 直播場數', 'Twitch 直播場數',
+        'YouTube 觀眾小時', 'Twitch 觀眾小時',]
 
     # 先把這些欄位的 NaN 補成 0（數字型別）
     grouped[numeric_cols] = grouped[numeric_cols].fillna(0)
@@ -351,9 +372,32 @@ elif view_mode == "總觀看統計":
     grouped[numeric_cols] = grouped[numeric_cols].replace("", pd.NA).fillna(0)
 
 
-    # 四捨五入並轉成字串
+    # 平均觀看數四捨五入到小數點第一位
     grouped['YouTube 平均觀看數'] = pd.to_numeric(grouped['YouTube 平均觀看數'], errors='coerce').round(1)
     grouped['Twitch 平均觀看數'] = pd.to_numeric(grouped['Twitch 平均觀看數'], errors='coerce').round(1)
+    
+    grouped['YouTube 觀眾小時'] = pd.to_numeric(grouped['YouTube 觀眾小時'], errors='coerce').round(1)
+    grouped['Twitch 觀眾小時'] = pd.to_numeric(grouped['Twitch 觀眾小時'], errors='coerce').round(1)
+    
+    def format_k(x):
+        if pd.isna(x) or x == 0:
+            return "0k"
+        return f"{max(x, 1) / 1000:.1f}k"
+
+    grouped['YouTube 觀眾小時 (k)'] = grouped['YouTube 觀眾小時'].apply(format_k)
+    grouped['Twitch 觀眾小時 (k)'] = grouped['Twitch 觀眾小時'].apply(format_k)
+    
+    grouped = grouped.drop(columns=[
+        'YouTube 觀眾小時',
+        'Twitch 觀眾小時'
+    ])
+    
+    grouped = grouped.rename(columns={
+        'YouTube 觀眾小時 (k)': 'YouTube 觀眾小時',
+        'Twitch 觀眾小時 (k)': 'Twitch 觀眾小時',
+    })
+    
+
 
 
     # 新增流水號欄位（從 1 開始）
@@ -368,8 +412,11 @@ elif view_mode == "總觀看統計":
 
     # 設定欄寬
     for col, width in zip(
-        ["編號", "頻道", "YouTube 平均觀看數", "Twitch 平均觀看數", "紀錄筆數", "YouTube 直播場數", "Twitch 直播場數"],
-        [80, 100, 180, 180, 100, 170, 160]
+        ["編號", "頻道", 
+        "YouTube 平均觀看數", "Twitch 平均觀看數", 
+        "紀錄筆數", "YouTube 直播場數", "Twitch 直播場數",
+        "YouTube 觀眾小時", "Twitch 觀眾小時"],
+        [80, 100, 180, 180, 100, 170, 160, 170, 170]
     ):
         gb.configure_column(
             col, 
